@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Odvykání – light</title>
+<meta name="theme-color" content="#0f172a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Odvykání" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+:root{
+  --bg:#0f172a; --muted:#94a3b8; --text:#e5e7eb;
+  --accent:#22c55e; --accent-2:#16a34a; --money:#eab308;
+  --border:rgba(255,255,255,.1);
+  --ok:#86efac; --ok-bg:rgba(34,197,94,.10);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{
+  margin:0; height:100%;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  background:var(--bg); color:var(--text); overscroll-behavior:none;
+}
+
+.wrap{
+  max-width:480px; margin:0 auto;
+  padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+  min-height:100dvh; display:flex; flex-direction:column; gap:12px;
+}
+
+/* ───── HEADER ───── */
+header{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+header h1{font-size:1.05rem; margin:0; font-weight:700; color:var(--ok);}
+.hbtn{
+  height:38px; min-width:38px; padding:0 10px;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  border:1px solid var(--border); border-radius:10px;
+  background:#0b1220; color:var(--text); font-size:14px; cursor:pointer;
+  transition:background .12s ease, transform .06s ease;
+  white-space:nowrap;
+}
+.hbtn:active{transform:scale(.95); background:#0f1b2f;}
+
+/* ───── KPI HERO ───── */
+.hero{
+  background:linear-gradient(135deg, rgba(34,197,94,.08), rgba(255,255,255,.02));
+  border:1px solid rgba(34,197,94,.25); border-radius:16px;
+  padding:18px 16px 14px; text-align:center;
+}
+.hero-days{
+  font-size:3.8rem; font-weight:900; line-height:1;
+  color:#a7f3d0; letter-spacing:-2px;
+}
+.hero-days-lbl{font-size:.8rem; color:var(--muted); margin-top:2px; margin-bottom:10px;}
+.hero-live{font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text);}
+.hero-since{font-size:.78rem; color:var(--muted); margin-top:4px;}
+
+.kpi-row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;}
+.kpi-mini{
+  background:rgba(255,255,255,.04); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px;
+}
+.kpi-mini .lbl{font-size:.75rem; color:var(--muted); margin-bottom:3px;}
+.kpi-mini .val{font-size:1rem; font-weight:700; white-space:nowrap;}
+.kpi-mini .val.money{color:var(--money);}
+.kpi-mini .sub{font-size:.72rem; color:var(--muted); margin-top:2px;}
+
+/* ───── AKCE ───── */
+.actions{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.abtn{
+  height:56px; border-radius:14px; border:1px solid var(--border);
+  background:#0b1220; color:var(--text); font-size:1rem; font-weight:600;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+  transition:background .12s ease, transform .06s ease;
+}
+.abtn:active{transform:scale(.96); background:#0f1b2f;}
+.abtn.accent{
+  background:linear-gradient(180deg, var(--accent), var(--accent-2));
+  border:none; color:#062814;
+}
+.abtn.warn{border-color:rgba(239,68,68,.35); color:#fca5a5;}
+.abtn.warn:active{background:#1a0a0a;}
+
+/* Toast undo */
+.toast{
+  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  background:#0b1220; border:1px solid rgba(255,255,255,.14); border-radius:999px;
+  padding:9px 16px; color:#e5e7eb; font-size:.9rem;
+  display:none; gap:12px; align-items:center; z-index:70; white-space:nowrap;
+}
+.toast.show{display:flex; animation:fadeIn .12s ease;}
+.toast .lnk{color:#86efac; text-decoration:underline; cursor:pointer;}
+
+/* ───── VÝZVA ───── */
+.challenge-card{
+  background:rgba(34,197,94,.06); border:1px solid rgba(34,197,94,.2);
+  border-radius:12px; padding:12px 14px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.challenge-card .lbl{font-size:.75rem; color:#a7f3d0; font-weight:700; white-space:nowrap;}
+.challenge-card .txt{font-size:.82rem; line-height:1.4; flex:1; min-width:120px;}
+.challenge-card .btns{display:flex; gap:5px; flex-shrink:0;}
+.challenge-card .streak{font-size:.72rem; color:var(--muted); width:100%;}
+.cbtn{
+  height:30px; min-width:30px; padding:0 7px; border-radius:7px; font-size:13px;
+  border:1px solid var(--border); background:#0b1220; color:var(--text); cursor:pointer;
+}
+.cbtn:active{transform:scale(.93);}
+
+/* ───── MILNÍK NEXT ───── */
+.next-milestone{
+  background:rgba(59,130,246,.06); border:1px solid rgba(59,130,246,.2);
+  border-radius:12px; padding:12px 14px;
+}
+.nm-top{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;}
+.nm-icon{font-size:1.3rem;}
+.nm-lbl{font-size:.85rem; font-weight:700;}
+.nm-pct{font-size:.8rem; color:#93c5fd; font-weight:700;}
+.nm-desc{font-size:.78rem; color:var(--muted); margin-bottom:8px;}
+.bar{height:6px; background:#0e1a2a; border:1px solid rgba(255,255,255,.06); border-radius:999px; overflow:hidden;}
+.bar>div{height:100%; background:linear-gradient(90deg, #3b82f6, #22c55e); transition:width .3s ease;}
+
+/* ───── MODAL Den D ───── */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.6);
+  display:none; align-items:flex-end; justify-content:center; z-index:80;
+}
+.modal-backdrop.open{display:flex; animation:fadeIn .15s ease;}
+.modal{
+  background:#0b1220; border:1px solid var(--border);
+  border-radius:16px 16px 0 0; width:100%; max-width:480px;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+}
+.modal h2{margin:0 0 14px; font-size:1rem;}
+.modal label{display:block; font-size:.82rem; color:#a9bed3; margin-bottom:4px;}
+.modal input{
+  width:100%; height:42px; padding:8px 12px; border-radius:9px;
+  border:1px solid rgba(255,255,255,.14); background:#0c1422; color:var(--text);
+  font-size:1rem; margin-bottom:14px;
+}
+.modal-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:4px;}
+.mbtn{
+  height:40px; padding:0 16px; border-radius:9px; font-size:.9rem; font-weight:600; cursor:pointer;
+  border:1px solid rgba(255,255,255,.15); background:#0b1220; color:#e5e7eb;
+}
+.mbtn.primary{background:linear-gradient(180deg,var(--accent),var(--accent-2)); border:none; color:#062814;}
+
+/* ───── CRAVING MODAL ───── */
+.craving-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.65);
+  display:none; align-items:flex-end; justify-content:center; z-index:80;
+}
+.craving-backdrop.open{display:flex; animation:fadeIn .15s ease;}
+.craving-sheet{
+  background:#0b1220; border:1px solid var(--border);
+  border-radius:16px 16px 0 0; width:100%; max-width:480px;
+  padding:20px 16px calc(16px + env(safe-area-inset-bottom));
+  max-height:85vh; display:flex; flex-direction:column;
+}
+.craving-sheet h2{margin:0 0 4px; font-size:1.05rem;}
+.craving-sheet .sub{font-size:.8rem; color:var(--muted); margin-bottom:12px;}
+.craving-info{
+  background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2);
+  border-radius:9px; padding:9px 12px; font-size:.82rem; color:#93c5fd;
+  text-align:center; margin-bottom:12px;
+}
+.craving-list{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; max-height:220px;}
+.craving-item{
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.04); border-radius:8px; padding:8px 10px;
+}
+.craving-item .num{font-size:.72rem; color:var(--muted); min-width:22px; text-align:right;}
+.craving-item .dt{font-size:.82rem; flex:1;}
+.craving-item .ok{font-size:.75rem; color:#22c55e;}
+.craving-item .del{
+  background:none; border:1px solid rgba(255,80,80,.3); border-radius:5px;
+  color:#f87171; font-size:.75rem; padding:2px 6px; cursor:pointer; flex-shrink:0;
+}
+.craving-empty{color:var(--muted); font-size:.82rem; text-align:center; padding:18px 0;}
+
+/* ───── FALEŠNÁ OBRAZOVKA ───── */
+#fakeScreen{
+  display:none; position:fixed; inset:0; background:#0f172a; z-index:200;
+  flex-direction:column; align-items:center; justify-content:center; gap:18px;
+}
+
+/* skrýt šipky u number inputu */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+input[type=number]{ -moz-appearance:textfield; }
+
+/* ───── CONFIRM DIALOG ───── */
+.confirm-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.65);
+  display:none; align-items:center; justify-content:center;
+  z-index:200; padding:20px;
+}
+.confirm-backdrop.open{ display:flex; animation:fadeIn .15s ease; }
+.confirm-box{
+  background:#0b1220; border:1px solid var(--border);
+  border-radius:16px; padding:24px 20px 20px;
+  width:100%; max-width:300px;
+  display:flex; flex-direction:column; gap:14px; text-align:center;
+}
+.confirm-box h3{ font-size:1rem; font-weight:700; margin:0; }
+.confirm-box p{ font-size:.85rem; color:var(--muted); line-height:1.5; margin:0; }
+.confirm-btns{ display:flex; gap:8px; }
+.confirm-btns button{
+  flex:1; height:42px; border-radius:10px; font-size:.9rem;
+  font-weight:700; cursor:pointer; border:1px solid var(--border);
+  transition:background .1s, transform .06s;
+}
+.confirm-btns button:active{ transform:scale(.96); }
+.confirm-no { background:#111827; color:var(--text); }
+.confirm-yes{ background:rgba(239,68,68,.15); color:#fca5a5; border-color:rgba(239,68,68,.3); }
+
+/* ───── TABS ───── */
+.tab{ display:none; flex-direction:column; gap:12px; }
+.tab.active{ display:flex; }
+
+/* ───── SMOKING TAB ───── */
+.smoke-hero{
+  background:linear-gradient(135deg, rgba(239,68,68,.08), rgba(255,255,255,.02));
+  border:1px solid rgba(239,68,68,.25); border-radius:16px;
+  padding:18px 16px 14px; text-align:center;
+}
+.smoke-count{
+  font-size:3.8rem; font-weight:900; line-height:1;
+  color:#fca5a5; letter-spacing:-2px;
+}
+.smoke-lbl{ font-size:.8rem; color:var(--muted); margin-top:2px; margin-bottom:10px; }
+.smoke-last{ font-size:.82rem; color:var(--muted); margin-top:4px; }
+.smoke-kpi{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px; }
+.smoke-kpi .kpi-mini .val{ font-size:.92rem; }
+
+.smoke-actions{ display:flex; flex-direction:column; gap:10px; }
+.abtn.smoke{ background:linear-gradient(180deg,#ef4444,#b91c1c); border:none; color:#fff; }
+.abtn.buy{ border-color:rgba(234,179,8,.4); color:var(--money); }
+.abtn.buy:active{ background:#1a1500; }
+.abtn.switch-mode{
+  border-color:rgba(34,197,94,.3); color:var(--accent);
+  font-size:.85rem; height:44px;
+}
+.abtn.switch-mode:active{ background:#0a1a10; }
+.abtn.relapse{
+  border-color:rgba(239,68,68,.35); color:#fca5a5;
+  font-size:.85rem; height:44px;
+}
+.abtn.relapse:active{ background:#1a0a0a; }
+
+/* ───── DECISION TREE MODAL ───── */
+.dtree-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  display:none; align-items:flex-end; justify-content:center; z-index:90;
+}
+.dtree-backdrop.open{ display:flex; animation:fadeIn .15s ease; }
+.dtree-sheet{
+  background:#0b1220; border:1px solid var(--border);
+  border-radius:16px 16px 0 0; width:100%; max-width:480px;
+  padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+  max-height:90vh; overflow-y:auto;
+}
+.dtree-q{ font-size:1.1rem; font-weight:700; margin-bottom:8px; }
+.dtree-sub{ font-size:.82rem; color:var(--muted); margin-bottom:18px; line-height:1.5; }
+.dtree-opts{ display:flex; flex-direction:column; gap:8px; }
+.dtree-btn{
+  height:52px; border-radius:12px; border:1px solid var(--border);
+  background:#111827; color:var(--text); font-size:.95rem; font-weight:600;
+  cursor:pointer; transition:background .12s, transform .06s;
+}
+.dtree-btn:active{ transform:scale(.97); background:#1a2235; }
+.dtree-btn.bad{ border-color:rgba(239,68,68,.35); color:#fca5a5; }
+.dtree-btn.bad:active{ background:#1a0a0a; }
+
+/* ───── SETTINGS MODAL ───── */
+.settings-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.65);
+  display:none; align-items:flex-end; justify-content:center; z-index:80;
+}
+.settings-backdrop.open{ display:flex; animation:fadeIn .15s ease; }
+.settings-sheet{
+  background:#0b1220; border:1px solid var(--border);
+  border-radius:16px 16px 0 0; width:100%; max-width:480px;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+}
+.settings-sheet h2{ margin:0 0 16px; font-size:1rem; }
+.sgroup{ margin-bottom:14px; }
+.sgroup label{ display:block; font-size:.78rem; color:#a9bed3; margin-bottom:4px; }
+.sgroup input{
+  width:100%; height:42px; padding:8px 12px; border-radius:9px;
+  border:1px solid rgba(255,255,255,.14); background:#0c1422; color:var(--text);
+  font-size:1rem;
+}
+
+/* ───── SMOKE HISTORY ───── */
+.smoke-history{ display:flex; flex-direction:column; gap:6px; }
+.sh-item{
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.04); border-radius:8px; padding:9px 12px;
+}
+.sh-icon{ font-size:1rem; flex-shrink:0; }
+.sh-info{ flex:1; font-size:.82rem; }
+.sh-reason{ font-size:.72rem; color:var(--muted); margin-top:1px; }
+.sh-time{ font-size:.75rem; color:var(--muted); white-space:nowrap; }
+.sh-del{
+  background:none; border:1px solid rgba(255,80,80,.3); border-radius:5px;
+  color:#f87171; font-size:.75rem; padding:2px 6px; cursor:pointer;
+}
+.sh-empty{ color:var(--muted); font-size:.82rem; text-align:center; padding:18px 0; }
+
+/* ───── UTILS ───── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <h1 id="appTitle">🚭 Odvykání</h1>
+    <div style="display:flex;gap:6px;">
+      <button class="hbtn" id="btnTabToggle" onclick="switchTab('smoke')" title="Přepnout mód">🚬 Kouřím</button>
+      <button class="hbtn" id="btnSettings" title="Nastavení">⚙️</button>
+      <button class="hbtn" id="btnEditDday" title="Nastavit Den D">✏️ Den D</button>
+      <button class="hbtn" id="btnFakeScreen" title="Falešná obrazovka">🎭</button>
+    </div>
+  </header>
+
+  <!-- TAB: ODVYKÁM -->
+  <div class="tab active" id="tabQuit">
+  <div class="hero">
+    <div class="hero-days" id="heroDays">—</div>
+    <div class="hero-days-lbl">dnů bez cigarety</div>
+    <div class="hero-live" id="heroLive">0:00:00</div>
+    <div class="hero-days-lbl" style="margin-top:2px;margin-bottom:0;font-size:.72rem;">dny : hodiny : minuty</div>
+    <div class="hero-since" id="heroSince">Zahájení: —</div>
+
+    <div class="kpi-row">
+      <div class="kpi-mini">
+        <div class="lbl">Ušetřeno (čisté)</div>
+        <div class="val money" id="kNet">0,00 Kč</div>
+        <div class="sub" id="kGross"></div>
+      </div>
+      <div class="kpi-mini">
+        <div class="lbl">Poslední náplast</div>
+        <div class="val" id="kPatch">—</div>
+        <div class="sub" id="kPatchSince"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AKCE -->
+  <div class="actions">
+    <button class="abtn accent" id="btnPatch">🩹 Náplast</button>
+    <button class="abtn warn" id="btnCraving">🚨 Craving <span id="cravingBadge" style="background:rgba(239,68,68,.2);border-radius:999px;padding:1px 7px;font-size:.8rem;">0</span></button>
+  </div>
+
+  <!-- DENNÍ VÝZVA -->
+  <div class="challenge-card">
+    <span class="lbl">🎯 Denní výzva</span>
+    <span class="txt" id="challengeText">Načítám…</span>
+    <div class="btns">
+      <button class="cbtn" id="btnChallengeDone" title="Splněno">✅</button>
+      <button class="cbtn" id="btnNewChallenge" title="Nová výzva">🔄</button>
+    </div>
+    <div class="streak">Série: <span id="challengeStreak">0 dní</span></div>
+  </div>
+
+  <!-- NEJBLIŽŠÍ MILNÍK -->
+  <div class="next-milestone" id="nextMilestoneCard" style="display:none;">
+    <div class="nm-top">
+      <span><span class="nm-icon" id="nmIcon">⭐</span> <span class="nm-lbl" id="nmLabel">—</span></span>
+      <span class="nm-pct" id="nmPct">0 %</span>
+    </div>
+    <div class="nm-desc" id="nmDesc"></div>
+    <div class="bar"><div id="nmBar" style="width:0%"></div></div>
+  </div>
+
+  <!-- PŘEPNOUT DO KOUŘÍM -->
+  <button class="abtn relapse" id="btnGoSmoke">🚬 Měl jsem cigaretu — přejít do módu Kouřím</button>
+
+  </div><!-- /tabQuit -->
+
+  <!-- TAB: KOUŘÍM -->
+  <div class="tab" id="tabSmoke">
+
+    <!-- HERO: NÁKLADY NA CIGARETY -->
+    <div style="background:linear-gradient(135deg,rgba(234,179,8,.08),rgba(255,255,255,.02));border:1px solid rgba(234,179,8,.25);border-radius:16px;padding:18px 16px;text-align:center;">
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Náklady na cigarety</div>
+      <div id="smokeTotalSpent" style="font-size:3.2rem;font-weight:900;line-height:1;color:var(--money);letter-spacing:-2px;">0 Kč</div>
+    </div>
+
+    <div class="smoke-hero">
+      <div class="smoke-count" id="smokeTodayCount">0</div>
+      <div class="smoke-lbl">cigaret dnes</div>
+      <div class="smoke-last" id="smokeLastTime">Poslední: —</div>
+      <div class="smoke-kpi">
+        <div class="kpi-mini">
+          <div class="lbl">Dnes</div>
+          <div class="val money" id="smokeCostDay">0 Kč</div>
+        </div>
+        <div class="kpi-mini">
+          <div class="lbl">Týden</div>
+          <div class="val money" id="smokeCostWeek">0 Kč</div>
+        </div>
+        <div class="kpi-mini">
+          <div class="lbl">Měsíc</div>
+          <div class="val money" id="smokeCostMonth">0 Kč</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="smoke-actions">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="abtn smoke" id="btnAddCig">🚬 + Cigareta</button>
+        <button class="abtn buy" id="btnBuyPack">🛒 Krabička</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">Dnes</div>
+      <div class="smoke-history" id="smokeHistoryToday"></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:4px;">
+        <div style="font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Nákupy krabiček</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--money);">Celkem: <span id="smokePurchasesTotal">0 Kč</span></div>
+      </div>
+      <div class="smoke-history" id="smokePurchases"></div>
+      <button class="abtn switch-mode" id="btnStartQuit">🚭 Zahajuji odvykání — vymazat historii kouření</button>
+    </div>
+
+  </div><!-- /tabSmoke -->
+
+</div><!-- /wrap -->
+
+<!-- DECISION TREE MODAL -->
+<div class="dtree-backdrop" id="dtreeBackdrop">
+  <div class="dtree-sheet" id="dtreeSheet">
+    <div class="dtree-q" id="dtreeQ"></div>
+    <div class="dtree-sub" id="dtreeSub"></div>
+    <div class="dtree-opts" id="dtreeOpts"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="settings-backdrop" id="settingsBackdrop">
+  <div class="settings-sheet">
+    <h2>⚙️ Nastavení</h2>
+    <div class="sgroup">
+      <label>Cena náplasti (Kč/ks)</label>
+      <input type="number" id="sPatchPrice" min="0" step="1" placeholder="0" />
+    </div>
+    <div class="sgroup">
+      <label>Cena krabičky cigaret (Kč)</label>
+      <input type="number" id="sPackPrice" min="0" step="1" placeholder="150" />
+    </div>
+    <div class="sgroup">
+      <label>Cigaret v krabičce</label>
+      <input type="number" id="sPackCigs" min="1" step="1" placeholder="20" />
+    </div>
+    <div class="sgroup">
+      <label>Cigaret denně (průměr — pro výpočet úspor)</label>
+      <input type="number" id="sPerDay" min="1" step="1" placeholder="15" />
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="mbtn" id="btnSettingsClose">Zrušit</button>
+      <button class="mbtn primary" id="btnSettingsSave">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-backdrop" id="confirmBackdrop">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Opravdu smazat?</h3>
+    <p id="confirmMsg">Tato akce je nevratná.</p>
+    <div class="confirm-btns">
+      <button class="confirm-no"  id="confirmNo">Ne</button>
+      <button class="confirm-yes" id="confirmYes">Ano</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Správa náplastí -->
+<div id="patchModal" class="craving-backdrop" aria-hidden="true">
+  <div class="craving-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+      <h2 style="margin:0;">🩹 Náplasti</h2>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <label style="font-size:.78rem;color:#a9bed3;white-space:nowrap;">Cena/ks:</label>
+        <input id="patchPrice" type="number" min="0" step="0.01" placeholder="0"
+          style="width:72px;height:32px;padding:0 8px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:#0c1422;color:var(--text);font-size:.9rem;outline:none;-moz-appearance:textfield;" />
+      </div>
+    </div>
+    <div class="sub">Celkem použito: <span id="patchTotal" style="color:#22c55e;font-weight:700;">0</span></div>
+    <button id="btnPatchAdd" style="height:48px;border-radius:10px;font-size:1rem;font-weight:700;background:linear-gradient(180deg,var(--accent),var(--accent-2));border:none;color:#062814;cursor:pointer;margin-bottom:12px;">🩹 Přidat náplast</button>
+    <div class="craving-list" id="patchList"></div>
+    <button id="btnPatchClose" style="height:40px;border-radius:9px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer;margin-top:10px;font-size:.9rem;">Zavřít</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast" role="status">
+  <span>🩹 Přidáno</span>
+  <span id="toastUndo" class="lnk">Zpět</span>
+</div>
+
+<!-- MODAL: Den D -->
+<div id="ddayModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog">
+    <h2>✏️ Nastavit Den D</h2>
+    <label for="ddayInput">Datum a čas zahájení</label>
+    <input id="ddayInput" type="datetime-local" />
+    <div class="modal-actions">
+      <button class="mbtn" id="btnDdayCancel">Zrušit</button>
+      <button class="mbtn primary" id="btnDdaySave">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- CRAVING MODAL -->
+<div id="cravingModal" class="craving-backdrop" aria-hidden="true">
+  <div class="craving-sheet">
+    <h2>🚨 Craving – překonej ho!</h2>
+    <div class="sub">Celkem překonáno: <span id="cravingTotal" style="color:#22c55e;font-weight:700;">0</span></div>
+    <div class="craving-info">⏱️ Craving trvá maximálně 3–5 minut. Vydržíš!</div>
+    <button id="btnCravingConfirm" style="height:48px;border-radius:10px;font-size:1rem;font-weight:700;background:linear-gradient(180deg,var(--accent),var(--accent-2));border:none;color:#062814;cursor:pointer;margin-bottom:12px;">💪 Vydržím!</button>
+    <div class="craving-list" id="cravingList">
+      <div class="craving-empty">Zatím žádný craving nezaznamenán.</div>
+    </div>
+    <button id="btnCravingClose" style="height:40px;border-radius:9px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer;margin-top:10px;font-size:.9rem;">Zavřít</button>
+  </div>
+</div>
+
+<!-- FALEŠNÁ OBRAZOVKA -->
+<div id="fakeScreen">
+  <div style="font-size:2.2rem;">📝</div>
+  <div style="font-size:1.3rem;font-weight:700;color:var(--text);">Poznámky</div>
+  <textarea placeholder="Zde jsou vaše poznámky…"
+    style="width:min(360px,88vw);height:180px;background:#1e293b;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:var(--text);font-size:.95rem;resize:none;"></textarea>
+  <small style="color:var(--muted);">Podržte 2 sekundy pro návrat</small>
+</div>
+
+<script>
+// ─── SMOKING STORAGE ───
+const SMOKE_KEY = 'smokeData';
+function loadSmoke(){
+  try{ return JSON.parse(localStorage.getItem(SMOKE_KEY)||'{"cigs":[],"packs":[]}'); }
+  catch(_){ return {cigs:[], packs:[]}; }
+}
+function saveSmoke(d){ localStorage.setItem(SMOKE_KEY, JSON.stringify(d)); }
+
+// ─── TAB SWITCHING ───
+let currentTab = 'quit';
+function switchTab(tab){
+  currentTab = tab;
+  $('tabQuit').classList.toggle('active', tab==='quit');
+  $('tabSmoke').classList.toggle('active', tab==='smoke');
+  $('appTitle').textContent = tab==='quit' ? '🚭 Odvykání' : '🚬 Kouřím';
+  $('btnEditDday').style.display = tab==='quit' ? '' : 'none';
+  const toggleBtn = $('btnTabToggle');
+  if(tab==='quit'){
+    toggleBtn.textContent = '🚬 Kouřím';
+    toggleBtn.onclick = ()=> switchTab('smoke');
+  } else {
+    toggleBtn.textContent = '🚭 Odvykám';
+    toggleBtn.onclick = ()=> switchTab('quit');
+  }
+  if(tab==='smoke') renderSmoke();
+}
+
+// ─── SETTINGS ───
+function openSettings(){
+  const s = loadState();
+  const p = loadPatches();
+  $('sPatchPrice').value = p.pricePer > 0 ? p.pricePer : '';
+  $('sPackPrice').value  = s.packPrice || '';
+  $('sPackCigs').value   = s.packCigs  || '';
+  $('sPerDay').value     = s.perDay    || '';
+  $('settingsBackdrop').classList.add('open');
+}
+function closeSettings(){ $('settingsBackdrop').classList.remove('open'); }
+function saveSettings(){
+  const s = loadState();
+  const p = loadPatches();
+  const patchP = parseFloat($('sPatchPrice').value.replace(',','.'));
+  if(patchP >= 0 && !isNaN(patchP)) p.pricePer = patchP;
+  const packP = parseFloat($('sPackPrice').value.replace(',','.'));
+  if(packP > 0) s.packPrice = packP;
+  const packC = parseInt($('sPackCigs').value);
+  if(packC > 0) s.packCigs = packC;
+  const perD = parseInt($('sPerDay').value);
+  if(perD > 0) s.perDay = perD;
+  saveState(s); savePatches(p);
+  closeSettings(); render();
+  showToast('Nastavení uloženo ✓');
+}
+
+// ─── DECISION TREE ───
+let dtreeMode = 'add'; // 'add' | 'relapse'
+let dtreeStep = 0;
+
+const REASONS = ['😰 Stres','😴 Nuda','😋 Chuť','😤 Vztek','👥 Sociální tlak','❓ Jiné'];
+
+function openDtree(mode){
+  dtreeMode = mode;
+  dtreeStep = 0;
+  showDtreeStep0();
+  $('dtreeBackdrop').classList.add('open');
+}
+function closeDtree(){ $('dtreeBackdrop').classList.remove('open'); }
+
+function showDtreeStep0(){
+  $('dtreeQ').textContent = dtreeMode==='relapse'
+    ? '😔 Opravdu sis dal cigaretu?'
+    : '🤔 Opravdu chceš zakouřit?';
+  $('dtreeSub').textContent = dtreeMode==='relapse'
+    ? 'Zaznamenáme relaps a přejdeme do módu Kouřím.'
+    : 'Craving obvykle trvá jen 3–5 minut. Zkus to vydržet.';
+  $('dtreeOpts').innerHTML = `
+    <button class="dtree-btn" onclick="dtreeDelay()">⏳ Odložit o 10 minut</button>
+    <button class="dtree-btn" onclick="dtreeStep1()">✅ Ano, chci kouřit</button>
+    <button class="dtree-btn" onclick="closeDtree()">← Zpět</button>
+  `;
+}
+
+function dtreeDelay(){
+  closeDtree();
+  showToast('⏳ Připomenu ti za 10 minut!');
+  setTimeout(()=>{ showToast('⏰ Stále chceš kouřit?'); }, 10*60*1000);
+}
+
+function dtreeStep1(){
+  $('dtreeQ').textContent = '📊 Proč chceš kouřit?';
+  $('dtreeSub').textContent = 'Pomáhá nám to pochopit spouštěče.';
+  $('dtreeOpts').innerHTML = REASONS.map(r=>
+    `<button class="dtree-btn bad" onclick="dtreeConfirm('${r}')">${r}</button>`
+  ).join('');
+}
+
+function resetQuit(){
+  const s = loadState();
+  s.quit = '';
+  saveState(s);
+  savePatches({...PATCH_DEFAULTS, apps:[]});
+  saveCravings([]);
+  localStorage.removeItem(DAILY_KEY);
+  localStorage.removeItem(STREAK_KEY);
+  localStorage.removeItem('usedChallenges');
+}
+
+function dtreeConfirm(reason){
+  closeDtree();
+  // Zmrazit odvykání — uložit čas relapsu
+  const s = loadState();
+  if(s.quit){
+    s.quitStopped = true;
+    s.quitStoppedAt = Date.now();
+    saveState(s);
+  }
+  // Zaznamenat cigaretu
+  const d = loadSmoke();
+  d.cigs.push({ts: Date.now(), reason});
+  saveSmoke(d);
+  switchTab('smoke');
+  render(); renderSmoke();
+  showToast('🚬 Zaznamenáno. Nevzdávej to, příště to zvládneš 💪');
+}
+
+// ─── SMOKE RENDER ───
+function renderSmoke(){
+  const d = loadSmoke();
+  const s = loadState();
+  const packPrice = parseFloat(s.packPrice)||150;
+  const packCigs  = parseInt(s.packCigs)||20;
+  const cigCost   = packPrice / packCigs;
+
+  const now = Date.now();
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const weekStart  = new Date(now - 7*86400000);
+  const monthStart = new Date(now - 30*86400000);
+
+  const todayCigs  = d.cigs.filter(c => c.ts >= todayStart.getTime());
+  const weekCigs   = d.cigs.filter(c => c.ts >= weekStart.getTime());
+  const monthCigs  = d.cigs.filter(c => c.ts >= monthStart.getTime());
+
+  $('smokeTodayCount').textContent = todayCigs.length;
+
+  if(d.cigs.length){
+    const last = new Date(d.cigs[d.cigs.length-1].ts);
+    $('smokeLastTime').textContent = 'Poslední: ' + last.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  } else {
+    $('smokeLastTime').textContent = 'Poslední: —';
+  }
+
+  const fmt = n => Math.round(n) + ' Kč';
+  $('smokeCostDay').textContent   = fmt(todayCigs.length  * cigCost);
+  $('smokeCostWeek').textContent  = fmt(weekCigs.length   * cigCost);
+  $('smokeCostMonth').textContent = fmt(monthCigs.length  * cigCost);
+
+  // Historie dnes
+  const histEl = $('smokeHistoryToday');
+  if(!todayCigs.length){
+    histEl.innerHTML = '<div class="sh-empty">Dnes zatím žádná cigareta.</div>';
+  } else {
+    histEl.innerHTML = todayCigs.slice().reverse().map((c)=>{
+      const globalIdx = d.cigs.indexOf(c);
+      const t = new Date(c.ts).toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="sh-item">
+        <span class="sh-icon">🚬</span>
+        <div class="sh-info">
+          <div>${t}</div>
+          <div class="sh-reason">${c.reason||''}</div>
+        </div>
+        <button class="sh-del" onclick="deleteCig(${globalIdx})">🗑</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Nákupy — pouze poslední
+  const purchEl = $('smokePurchases');
+  const totalSpent = d.packs.reduce((s,p) => s + (parseFloat(p.price)||0), 0);
+  $('smokePurchasesTotal').textContent = Math.round(totalSpent) + ' Kč';
+  $('smokeTotalSpent').textContent = Math.round(totalSpent).toLocaleString('cs-CZ') + ' Kč';
+  if(!d.packs.length){
+    purchEl.innerHTML = '<div class="sh-empty">Žádné nákupy krabiček.</div>';
+  } else {
+    const last = d.packs[d.packs.length-1];
+    const t = new Date(last.ts).toLocaleDateString('cs-CZ',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' +
+              new Date(last.ts).toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+    purchEl.innerHTML = `<div class="sh-item">
+      <span class="sh-icon">🛒</span>
+      <div class="sh-info">
+        <div>Poslední nákup: ${t}</div>
+        <div class="sh-reason">${last.price} Kč · celkem ${d.packs.length}×</div>
+      </div>
+    </div>`;
+  }
+}
+
+function deleteCig(i){
+  askConfirm('Smazat záznam?','Cigareta bude odebrána z historie.',()=>{
+    const d = loadSmoke(); d.cigs.splice(i,1); saveSmoke(d); renderSmoke();
+    showToast('Smazáno ✓');
+  });
+}
+function deletePurchase(i){
+  askConfirm('Smazat nákup?','Záznam nákupu bude odstraněn.',()=>{
+    const d = loadSmoke(); d.packs.splice(i,1); saveSmoke(d); renderSmoke();
+    showToast('Smazáno ✓');
+  });
+}
+
+function buyPack(){
+  const s = loadState();
+  const price = parseFloat(s.packPrice)||150;
+  const d = loadSmoke();
+  d.packs.push({ts: Date.now(), price});
+  saveSmoke(d); renderSmoke();
+  showToast(`🛒 Krabička zaznamenána — ${price} Kč`);
+}
+
+// ─── START QUIT (z kouřím → odvykám) ───
+function startQuit(){
+  askConfirm(
+    '🚭 Zahájit nové odvykání?',
+    'Vynuluje se streak, náplasti, cravings i výzvy. Začínáš znovu!',
+    ()=>{
+      const sd = loadSmoke();
+      sd.cigs = [];
+      saveSmoke(sd);
+      const s = loadState();
+      const now = new Date();
+      now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+      s.quit = now.toISOString().slice(0,16);
+      s.quitStopped = false;
+      s.quitStoppedAt = null;
+      saveState(s);
+      savePatches({...PATCH_DEFAULTS, apps:[]});
+      saveCravings([]);
+      localStorage.removeItem(DAILY_KEY);
+      localStorage.removeItem(STREAK_KEY);
+      localStorage.removeItem('usedChallenges');
+      switchTab('quit');
+      render(); renderChallenge();
+      showToast('🚭 Odvykání zahájeno! Jsi skvělý!');
+    }
+  );
+}
+
+// ─── STORAGE KEYS (stejné jako v hlavní verzi) ───
+const STATE_KEY  = 'quitStateSimple';
+const PATCH_KEY  = 'patchData';
+const CRAVING_KEY = 'cravings';
+const DAILY_KEY  = 'dailyChallenge';
+const STREAK_KEY = 'challengeStreak';
+
+const DEFAULTS = {
+  quit:"", prevQuit:"", perDay:15, curr:'Kč',
+  minPerCig:5, showKPI:true, packCigs:20, packPrice:150, note:""
+};
+const PATCH_DEFAULTS = { pricePer:0, packPrice:0, packCount:0, brand:"Nicorette", strength:14, apps:[] };
+
+function loadState(){
+  try{ return {...DEFAULTS, ...JSON.parse(localStorage.getItem(STATE_KEY)||'{}')}; }
+  catch(_){ return {...DEFAULTS}; }
+}
+function saveState(s){ localStorage.setItem(STATE_KEY, JSON.stringify(s)); }
+
+function loadPatches(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(PATCH_KEY)||'{}');
+    const p = {...PATCH_DEFAULTS, ...(raw||{})};
+    const per = (p.packPrice>0 && p.packCount>0) ? (p.packPrice/p.packCount) : p.pricePer;
+    p.pricePer = Number.isFinite(per) ? per : 0;
+    p.apps = Array.isArray(p.apps) ? p.apps : [];
+    return p;
+  }catch(_){ return {...PATCH_DEFAULTS}; }
+}
+function savePatches(p){ localStorage.setItem(PATCH_KEY, JSON.stringify(p)); }
+
+function loadCravings(){ try{ return JSON.parse(localStorage.getItem(CRAVING_KEY)||'[]'); }catch(_){ return []; } }
+function saveCravings(a){ localStorage.setItem(CRAVING_KEY, JSON.stringify(a)); }
+
+// ─── UTILS ───
+const $ = id => document.getElementById(id);
+const DAY_MS = 86400000;
+const pad2 = n => String(n).padStart(2,'0');
+
+function fmtDate(d){
+  if(!d) return '—';
+  const x = d instanceof Date ? d : new Date(d);
+  if(isNaN(x)) return '—';
+  return x.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function fmtMoney(n, curr){
+  const v = Math.round((n||0)*100)/100;
+  return v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+' '+(curr||'Kč');
+}
+function fmtHHMMSS(ms){
+  const s = Math.floor(ms/1000);
+  const hh = Math.floor(s/3600), mm = Math.floor((s%3600)/60), ss = s%60;
+  return `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+}
+function fmtDDHHMM(ms){
+  const d = Math.floor(ms/DAY_MS);
+  const h = Math.floor((ms/3600000)%24);
+  const m = Math.floor((ms/60000)%60);
+  return `${d}:${pad2(h)}:${pad2(m)}`;
+}
+function nowLocal(){
+  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+function clamp01(x){ return Math.max(0,Math.min(1,x)); }
+
+// ─── MILESTONES (klíčové) ───
+const MS_KEY = [
+  {key:'20m',  icon:'⌛', label:'20 minut',   hours:0.33,      desc:'Tlak a puls se vrací k normě.'},
+  {key:'12h',  icon:'🫁', label:'12 hodin',   hours:12,        desc:'Krev lépe nese kyslík.'},
+  {key:'24h',  icon:'🫀', label:'24 hodin',   hours:24,        desc:'Srdce má o něco méně práce.'},
+  {key:'7d',   icon:'🏅', label:'7 dní',      hours:24*7,      desc:'První týden je velký úspěch.'},
+  {key:'30d',  icon:'🌿', label:'30 dní',     hours:24*30,     desc:'Měsíc bez kouře je velký milník.'},
+  {key:'90d',  icon:'🏁', label:'90 dní',     hours:24*90,     desc:'Tři měsíce bez kouře.'},
+  {key:'6m',   icon:'💓', label:'6 měsíců',   hours:24*30*6,   desc:'Kašel a dušnost ustupují.'},
+  {key:'1y',   icon:'❤️', label:'1 rok',      hours:24*365,    desc:'Riziko srdečních chorob klesá.'},
+  {key:'5y',   icon:'🛡️', label:'5 let',      hours:24*365*5,  desc:'Riziko mrtvice výrazně klesá.'},
+  {key:'10y',  icon:'🎯', label:'10 let',     hours:24*365*10, desc:'Riziko rakoviny plic je nižší.'},
+];
+
+// ─── COMPUTE ───
+function compute(){
+  const s = loadState();
+  const p = loadPatches();
+  const quitDate = s.quit ? new Date(s.quit) : null;
+  const now = new Date();
+  const refTime = (s.quitStopped && s.quitStoppedAt) ? new Date(s.quitStoppedAt) : now;
+  const diffMs = (!quitDate || isNaN(quitDate)) ? 0 : Math.max(0, refTime - quitDate);
+  const daysFloat = diffMs / DAY_MS;
+
+  const perDay = Math.max(0, parseInt(s.perDay)||15);
+  const packCigs = Math.max(1, parseInt(s.packCigs)||20);
+  const packPrice = Math.max(0, parseFloat(s.packPrice)||150);
+  const perDayMoney = (perDay/packCigs)*packPrice;
+  const savedGross = Math.round(daysFloat*perDayMoney*100)/100;
+  const patchCost = Math.round((p.apps.length)*(p.pricePer||0)*100)/100;
+  const savedNet = Math.round((savedGross - patchCost)*100)/100;
+
+  const milestones = MS_KEY.map(m=>{
+    const ratio = quitDate ? clamp01((now-quitDate)/(m.hours*3600000)) : 0;
+    return {...m, ratio, done: ratio>=1, pct: Math.round(ratio*100)};
+  });
+
+  return {s, p, quitDate, diffMs, daysFloat, savedGross, patchCost, savedNet, milestones};
+}
+
+// ─── RENDER ───
+function render(){
+  const R = compute();
+  const stopped = R.s.quitStopped;
+
+  // Hero days
+  const days = Math.floor(R.daysFloat);
+  $('heroDays').textContent = R.quitDate ? days : '—';
+  $('heroLive').textContent = R.quitDate ? fmtDDHHMM(R.diffMs) : '—:—:—';
+
+  if(stopped){
+    $('heroSince').textContent = '⏸ Vydržel jsi: ' + fmtDDHHMM(R.diffMs);
+  } else {
+    $('heroSince').textContent = R.quitDate ? 'Zahájení: ' + fmtDate(R.quitDate) : 'Den D není nastaven';
+  }
+
+  // Tlačítko přepnutí
+  const goSmokeBtn = $('btnGoSmoke');
+  if(stopped){
+    goSmokeBtn.textContent = '🚭 Zahájit nové odvykání';
+    goSmokeBtn.onclick = startQuit;
+    goSmokeBtn.className = 'abtn switch-mode';
+  } else {
+    goSmokeBtn.textContent = '🚬 Měl jsem cigaretu — přejít do módu Kouřím';
+    goSmokeBtn.onclick = ()=> openDtree('relapse');
+    goSmokeBtn.className = 'abtn relapse';
+  }
+
+  // KPI mini
+  $('kNet').textContent = fmtMoney(R.savedNet, R.s.curr);
+  $('kGross').textContent = R.quitDate ? 'Brutto: ' + fmtMoney(R.savedGross, R.s.curr) : '';
+
+  // Náplast
+  const pa = R.p.apps;
+  if(pa.length){
+    const last = Number(pa[pa.length-1]);
+    const diff = Math.max(0, Date.now()-last);
+    $('kPatch').textContent = fmtDDHHMM(diff);
+    $('kPatchSince').textContent = fmtDate(last);
+  } else {
+    $('kPatch').textContent = '—';
+    $('kPatchSince').textContent = '';
+  }
+
+  // Nejbližší milník
+  const next = R.milestones.find(m => !m.done);
+  if(next && R.quitDate){
+    $('nextMilestoneCard').style.display = 'block';
+    $('nmIcon').textContent = next.icon;
+    $('nmLabel').textContent = next.label;
+    $('nmDesc').textContent = next.desc;
+    $('nmPct').textContent = next.pct + ' %';
+    $('nmBar').style.width = next.pct + '%';
+  } else {
+    $('nextMilestoneCard').style.display = R.quitDate ? 'block' : 'none';
+    if(R.quitDate){
+      $('nmIcon').textContent = '🌳';
+      $('nmLabel').textContent = 'Všechny milníky splněny!';
+      $('nmDesc').textContent = 'Skvělá práce.';
+      $('nmPct').textContent = '100 %';
+      $('nmBar').style.width = '100%';
+    }
+  }
+
+  // Craving badge
+  const cArr = loadCravings();
+  $('cravingBadge').textContent = cArr.length;
+  $('cravingTotal').textContent = cArr.length;
+  $('cravingBadge').style.display = cArr.length ? '' : 'none';
+}
+
+// ─── CONFIRM DIALOG ───
+let confirmCb = null;
+function askConfirm(title, msg, onYes){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmBackdrop').classList.add('open');
+  confirmCb = onYes;
+}
+function closeConfirm(){
+  document.getElementById('confirmBackdrop').classList.remove('open');
+  confirmCb = null;
+}
+
+// ─── TOAST ───
+let toastTimer = 0;
+function showToast(msg){
+  clearTimeout(toastTimer);
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ─── PATCH MODAL ───
+function openPatchModal(){
+  renderPatchList();
+  // Načti uloženou cenu do pole
+  const d = loadPatches();
+  $('patchPrice').value = d.pricePer > 0 ? d.pricePer : '';
+  $('patchModal').classList.add('open');
+  $('patchModal').setAttribute('aria-hidden','false');
+}
+function closePatchModal(){
+  $('patchModal').classList.remove('open');
+  $('patchModal').setAttribute('aria-hidden','true');
+}
+function addPatch(){
+  const d = loadPatches();
+  // Ulož cenu z pole
+  const price = parseFloat($('patchPrice').value.replace(',','.'));
+  if(price > 0) d.pricePer = price;
+  d.apps.push(Date.now());
+  savePatches(d); render();
+  closePatchModal();
+  showToast('🩹 Náplast přidána');
+}
+function deletePatch(i){
+  askConfirm('Smazat náplast?', 'Záznam bude trvale odstraněn.', ()=>{
+    const d = loadPatches();
+    d.apps.splice(i,1);
+    savePatches(d); render(); renderPatchList();
+    showToast('Smazáno ✓');
+  });
+}
+function renderPatchList(){
+  const d = loadPatches();
+  const arr = d.apps;
+  $('patchTotal').textContent = arr.length;
+  const list = $('patchList');
+  if(!arr.length){
+    list.innerHTML = '<div class="craving-empty">Zatím žádná náplast nezaznamenána.</div>';
+    return;
+  }
+  list.innerHTML = arr.slice().reverse().map((ts,i)=>{
+    const orig = arr.length-1-i;
+    const dt = new Date(Number(ts)).toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const num = arr.length-i;
+    return `<div class="craving-item">
+      <span class="num">#${num}</span>
+      <span class="dt">${dt}</span>
+      <button class="del" onclick="deletePatch(${orig})">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── DEN D MODAL ───
+function openDdayModal(){
+  const s = loadState();
+  const current = s.quit ? new Date(s.quit) : new Date();
+  const yyyy = current.getFullYear();
+  const mm = String(current.getMonth()+1).padStart(2,'0');
+  const dd = String(current.getDate()).padStart(2,'0');
+  const hh = String(current.getHours()).padStart(2,'0');
+  const mi = String(current.getMinutes()).padStart(2,'0');
+  $('ddayInput').value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  $('ddayModal').classList.add('open');
+  $('ddayModal').setAttribute('aria-hidden','false');
+}
+function closeDdayModal(){
+  $('ddayModal').classList.remove('open');
+  $('ddayModal').setAttribute('aria-hidden','true');
+}
+function saveDday(){
+  const val = $('ddayInput').value;
+  if(!val){ closeDdayModal(); return; }
+  const s = loadState();
+  if(s.quit && s.quit !== val){
+    closeDdayModal();
+    askConfirm('Změnit Den D?', 'Vše se resetuje – náplasti, cravings i výzvy. Jedeme znovu!', ()=>{
+      const s2 = loadState();
+      s2.prevQuit = s2.quit ?? '';
+      s2.quit = val;
+      saveState(s2);
+      // Plný reset
+      savePatches({...PATCH_DEFAULTS, apps:[]});
+      saveCravings([]);
+      localStorage.removeItem(DAILY_KEY);
+      localStorage.removeItem(STREAK_KEY);
+      localStorage.removeItem('usedChallenges');
+      render(); renderChallenge();
+      showToast('Nový start ✓');
+    });
+  } else {
+    s.prevQuit = s.quit ?? '';
+    s.quit = val;
+    saveState(s); render(); closeDdayModal();
+    showToast('Den D uložen ✓');
+  }
+}
+
+// ─── CRAVING ───
+function openCravingModal(){
+  renderCravingList();
+  $('cravingModal').classList.add('open');
+  $('cravingModal').setAttribute('aria-hidden','false');
+}
+function closeCravingModal(){
+  $('cravingModal').classList.remove('open');
+  $('cravingModal').setAttribute('aria-hidden','true');
+}
+function confirmCraving(){
+  const arr = loadCravings();
+  arr.push(Date.now());
+  saveCravings(arr);
+  render();
+  closeCravingModal();
+  showToast('💪 Craving překonán!');
+}
+function deleteCraving(i){
+  askConfirm('Smazat craving?', 'Záznam bude trvale odstraněn.', ()=>{
+    const arr = loadCravings();
+    arr.splice(i,1); saveCravings(arr);
+    render(); renderCravingList();
+    showToast('Smazáno ✓');
+  });
+}
+function renderCravingList(){
+  const arr = loadCravings();
+  const list = $('cravingList');
+  $('cravingTotal').textContent = arr.length;
+  if(!arr.length){
+    list.innerHTML = '<div class="craving-empty">Zatím žádný craving nezaznamenán.</div>';
+    return;
+  }
+  list.innerHTML = arr.slice().reverse().map((ts,i)=>{
+    const orig = arr.length-1-i;
+    const d = new Date(Number(ts));
+    const dt = d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const num = arr.length-i;
+    return `<div class="craving-item">
+      <span class="num">#${num}</span>
+      <span class="dt">${dt}</span>
+      <span class="ok">✓ překonáno</span>
+      <button class="del" onclick="deleteCraving(${orig})">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── DENNÍ VÝZVA ───
+const CHALLENGES = [
+  '🏃 Zajdi na procházku alespoň 15 minut.',
+  '😴 Dnes si lehni spát o 30 minut dříve.',
+  '🍵 Vyzkoušej bylinný čaj místo kávy.',
+  '📖 Přečti si jednu inspirativní stránku nebo článek.',
+  '🌳 Stráv 10 minut v přírodě nebo u otevřeného okna.',
+  '💪 Udělej 3 série po 10 dřepech kdykoli ucítíš craving.',
+  '🤝 Řekni dnes "ne" jedné zbytečné situaci.',
+  '🎯 Stanoví si jeden malý cíl na dnešní den a splň ho.',
+  '🛁 Dopřej si relaxační koupel nebo sprchu.',
+  '📸 Vyfoť něco krásného co bys dřív přehlédl.',
+  '🧹 Ukliď jedno místo v bytě – fyzická aktivita pomáhá.',
+  '🌅 Ráno se 5 minut dívej z okna bez telefonu.'
+];
+function getTodayChallenge(){
+  const dayKey = new Date().toISOString().slice(0,10);
+  const stored = localStorage.getItem(DAILY_KEY);
+  if(stored){ try{ const o=JSON.parse(stored); if(o.day===dayKey) return o; }catch(_){} }
+  const idx = Math.floor(Math.random()*CHALLENGES.length);
+  const obj = {day:dayKey, idx, done:false};
+  localStorage.setItem(DAILY_KEY, JSON.stringify(obj));
+  return obj;
+}
+function renderChallenge(){
+  const obj = getTodayChallenge();
+  const full = CHALLENGES[obj.idx];
+  $('challengeText').textContent = full.length>70 ? full.slice(0,67)+'…' : full;
+  const btn = $('btnChallengeDone');
+  btn.style.opacity = obj.done ? '.45' : '1';
+  btn.disabled = obj.done;
+  const streak = parseInt(localStorage.getItem(STREAK_KEY)||'0');
+  $('challengeStreak').textContent = streak + ' dní';
+}
+function completeChallenge(){
+  const obj = getTodayChallenge();
+  if(obj.done) return;
+  obj.done = true;
+  localStorage.setItem(DAILY_KEY, JSON.stringify(obj));
+  const streak = parseInt(localStorage.getItem(STREAK_KEY)||'0');
+  localStorage.setItem(STREAK_KEY, String(streak+1));
+  renderChallenge();
+}
+function newChallenge(){
+  const dayKey = new Date().toISOString().slice(0,10);
+  const used = JSON.parse(localStorage.getItem('usedChallenges')||'[]');
+  let idx;
+  do{ idx = Math.floor(Math.random()*CHALLENGES.length); }
+  while(used.includes(idx) && used.length < CHALLENGES.length);
+  const newUsed = [...used.filter(i=>i!==idx), idx].slice(-10);
+  localStorage.setItem('usedChallenges', JSON.stringify(newUsed));
+  const obj = {day:dayKey, idx, done:false};
+  localStorage.setItem(DAILY_KEY, JSON.stringify(obj));
+  renderChallenge();
+}
+
+// ─── FALEŠNÁ OBRAZOVKA ───
+let fakeHoldTimer = null;
+function activateFakeScreen(){
+  const fs = $('fakeScreen');
+  fs.style.display = 'flex';
+  fs.addEventListener('pointerdown', startFakeExit);
+  fs.addEventListener('pointerup', cancelFakeExit);
+}
+function startFakeExit(){ fakeHoldTimer = setTimeout(deactivateFakeScreen, 2000); }
+function cancelFakeExit(){ clearTimeout(fakeHoldTimer); }
+function deactivateFakeScreen(){
+  const fs = $('fakeScreen');
+  if(fs) fs.style.display = 'none';
+}
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', ()=>{
+
+  // Settings
+  $('btnSettings').onclick    = openSettings;
+  $('btnSettingsClose').onclick = closeSettings;
+  $('btnSettingsSave').onclick  = saveSettings;
+  $('settingsBackdrop').addEventListener('click', e=>{ if(e.target===$('settingsBackdrop')) closeSettings(); });
+
+  // Smoke tab buttons
+  $('btnAddCig').onclick   = ()=> openDtree('add');
+  $('btnBuyPack').onclick  = buyPack;
+  $('btnStartQuit').onclick = startQuit;
+  $('btnGoSmoke').onclick  = ()=> openDtree('relapse');
+  $('dtreeBackdrop').addEventListener('click', e=>{ if(e.target===$('dtreeBackdrop')) closeDtree(); });
+
+  // Confirm dialog
+  $('confirmYes').onclick = ()=>{ if(confirmCb) confirmCb(); closeConfirm(); };
+  $('confirmNo').onclick  = closeConfirm;
+  $('confirmBackdrop').addEventListener('click', e=>{ if(e.target===$('confirmBackdrop')) closeConfirm(); });
+
+  // Den D
+  $('btnEditDday').onclick = openDdayModal;
+  $('btnDdayCancel').onclick = closeDdayModal;
+  $('btnDdaySave').onclick = saveDday;
+  $('ddayModal').addEventListener('click', e=>{ if(e.target===$('ddayModal')) closeDdayModal(); });
+
+  // Náplast — otevře modal
+  $('btnPatch').onclick = openPatchModal;
+  $('btnPatchAdd').onclick = addPatch;
+  $('btnPatchClose').onclick = closePatchModal;
+  $('patchModal').addEventListener('click', e=>{ if(e.target===$('patchModal')) closePatchModal(); });
+  $('patchPrice').addEventListener('change', ()=>{
+    const price = parseFloat($('patchPrice').value.replace(',','.'));
+    if(price >= 0){
+      const d = loadPatches();
+      d.pricePer = price;
+      savePatches(d); render();
+    }
+  });
+
+  // Craving
+  $('btnCraving').onclick = openCravingModal;
+  $('btnCravingConfirm').onclick = confirmCraving;
+  $('btnCravingClose').onclick = closeCravingModal;
+  $('cravingModal').addEventListener('click', e=>{ if(e.target===$('cravingModal')) closeCravingModal(); });
+
+  // Výzva
+  $('btnChallengeDone').onclick = completeChallenge;
+  $('btnNewChallenge').onclick = newChallenge;
+
+  // Falešná obrazovka
+  $('btnFakeScreen').onclick = activateFakeScreen;
+
+  // Escape
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ closeDdayModal(); closeCravingModal(); closePatchModal(); closeConfirm(); closeSettings(); closeDtree(); }
+  });
+
+  // První render + interval
+  render(); renderChallenge();
+  setInterval(()=>{ const s=loadState(); if(!s.quitStopped) render(); }, 1000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ render(); renderChallenge(); } });
+});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+</script>
+</body>
+</html>
